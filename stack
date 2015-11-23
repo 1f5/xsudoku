@@ -1,0 +1,167 @@
+package gdp.aufgabe22;
+
+import java.util.*;
+
+public class XSudoku {
+    private final static int[] InvalidField = { -1, -1 };
+
+    public static boolean isPermutation(int[] a) { // why do it easy, when you
+						   // can do it complicated?
+	int[] sort = new int[a.length];
+	System.arraycopy(a, 0, sort, 0, a.length);
+	Arrays.sort(sort);
+	for (int i = 0; i < (a.length - 1); i++) {
+	    if (!(sort[i + 1] > sort[i] || sort[i] == 0)) {
+		return false;
+	    }
+	}
+	return true;
+    }
+
+    public static boolean isPermutationRow(int[][] a, int row) {
+	return isPermutation(a[row]);
+
+    }
+
+    public static boolean isPermutationCol(int[][] a, int col) {
+	int size = a[col].length;
+	int[] column = new int[size];
+	for (int i = 0; i < size; i++) {
+	    int copy = a[i][col];
+	    column[i] = copy;
+	}
+	return isPermutation(column);
+    }
+
+    public static boolean isPermutationDiagonal(int[][] a) {
+	int[] diagonal0 = new int[9];
+	int[] diagonal1 = new int[9];
+	for (int i = 0; i < 9; i++) {
+	    diagonal0[i] = a[i][i];
+	    diagonal1[i] = a[i][8 - i];
+	}
+	return (isPermutation(diagonal0) && isPermutation(diagonal1));
+    }
+
+    public static boolean isPermutationMatrix(int[][] a) {
+	for (int i = 0; i < a.length; i++) {
+	    if (! isPermutationRow(a, i)) {
+		/*
+		 * Unnecessary to check further columns if the current one is
+		 * not a palindrome
+		 */
+		return false;
+	    }    
+	}
+	for(int i = 0; i < (a[0].length); i++){
+	    if (! isPermutationCol(a, i)){
+		return false;
+	    }
+	}
+	return true;
+    }
+
+    public static boolean isPermutationBlock(int[][] a, int minRow, int maxRow,
+	    int minCol, int maxCol) {
+	int[] block = new int[(maxRow - minRow) * (maxCol - minCol)];
+
+	for (int sir = minRow, ti = 0; sir < maxRow; sir++) {
+	    /*
+	     * sir= source index row, ti=target index
+	     */
+	    for (int sic = minCol; sic < maxCol; sic++, ti++) {
+		// sic=source index column
+		int copy = a[sir][sic];
+		block[ti] = copy;
+	    }
+	}
+	return isPermutation(block);
+    }
+
+    public static boolean isValid(int[][] a) {
+	boolean valid = true;
+
+	if (!(isPermutationMatrix(a) && isPermutationDiagonal(a))) {
+	    valid = false;
+	} else {
+	    for (int ir = 0; ir < 9; ir += 3) { // checks blocks
+		for (int ic = 0; ic < 9; ic += 3) {
+		    if (!isPermutationBlock(a, ir, ir + 3, ic, ic + 3)) {
+			valid = false;
+			break;
+		    }
+		}
+	    }
+	}
+	return valid;
+    }
+
+    private static boolean isValidSudoku(int[][] a) {
+	return (Arrays.equals(getFreeField(a), InvalidField) && isValid(a));
+    }
+
+    public static int[][] solve(int[][] a) {
+	int[] field = { -1, -1 };
+	ArrayList<int[]> freeFields = new ArrayList<int[]>();
+
+	if (!isValidSudoku(a)) {
+	    while (!Arrays.equals(InvalidField, (field = getFreeField(a)))) { // find
+									      // free
+									      // fields
+		a[field[0]][field[1]] = 1;
+		freeFields.add(field);
+	    }
+	    if (!freeFields.isEmpty()) {
+		a = generateSolution(
+			(freeFields.toArray(new int[freeFields.size()][2])), a,
+			1);
+	    } else {
+		a = null;
+	    }
+
+	}
+	return a;
+    }
+
+    private static int[][] generateSolution(int[][] freeFields, int[][] a, int number) {
+	for(int i=0; i<freeFields.length; i++){
+	    a[freeFields[i][0]][freeFields[i][1]] = getDigit(number, i);
+	}
+
+	if (isValidSudoku(a)) {
+	    return a;
+	} else if (number >= (Math.pow(10, freeFields.length) - 1)) {
+	    return null;
+	} else {
+	   return generateSolution(freeFields, a, number+1);
+	}
+    }
+    
+    private static int getDigit(int number, int pos){
+	int result = 0;
+	result = (int) (number / Math.pow(10, pos));
+	return result - (result/10)*10;
+    }
+
+    private static int[] getFreeField(int[][] a) {
+	int[] field = { -1, -1 };
+	for (int ix = 0; ix < a.length; ix++) {
+	    for (int iy = 0; iy < a.length; iy++) {
+		if (a[ix][iy] == 0) {
+		    field[0] = ix;
+		    field[1] = iy;
+		    break;
+		}
+	    }
+	}
+	return field;
+    }
+
+    public static void main(String[] args) {
+	int[][] a = new int[3][3];
+
+	a=solve(a);
+	System.out.println(a);
+    }
+
+}
